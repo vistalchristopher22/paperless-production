@@ -1,0 +1,231 @@
+@extends('layouts.app-2')
+@section('tab-title', 'Modify Schedule')
+@prepend('page-css')
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <style>
+        .kanban-board {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .kanban-column {
+            /* background-color: #f2f3f6; */
+            padding: 10px;
+            padding-right: 32px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            flex-basis: calc(33.33% - 20px);
+            /* max-width: calc(33.33% - 20px); */
+        }
+
+        .kanban-column h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+        }
+
+        .kanban-card {
+            /* background-color: #ffffff; */
+            background-color: #07073d;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .kanban-card h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .kanban-card p {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        .kanban-card-placeholder {
+            border: 1px dashed #07073d;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            height: 100px;
+            margin-bottom: 10px;
+            letter-spacing: 1.1px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+        }
+
+        ol {
+            list-style-type: none;
+            margin-left: 20px;
+        }
+    </style>
+@endprepend
+@section('content')
+    <div class="card">
+        <div class="card-header m-0 py-0 px-0">
+            <button class="nav-item dropdown btn btn-dark rounded-0 float-end" role="presentation">
+                <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown" href="#" role="button"
+                   aria-expanded="false">
+                    Actions
+                    <i class="mdi mdi-chevron-down"></i>
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" target="_blank"
+                       href="{{ route('committee-meeting-schedule.preview', $dates) }}">Preview</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" target="_blank"
+                       href="{{ route('committee-meeting-schedule.print', $dates) }}">Print</a>
+                </div>
+            </button>
+        </div>
+
+        <div class="tab-content" id="tab-panes">
+            <div class="tab-pane fade show active" id="committee" role="tabpanel" aria-labelledby="committee-tab">
+                <div class="card-body">
+                    <div
+                        class="header d-flex flex-row align-items-center justify-content-center border border-start-0 border-end-0 border-top-0 border-5 border-dark mb-3">
+                        <img width="10%" src="{{ asset('session/logo.png') }}" alt="" class="me-auto">
+                        <div class="d-flex flex-column align-items-center">
+                            <h4 class="text-dark">Republic of the Philippines</h4>
+                            <h4 class="fw-bold text-dark">PROVINCE OF SURIGAO DEL SUR</h4>
+                            <h4 class="text-dark">Tandag City</h4>
+                            <h3 class="fw-bold text-dark">TANGGAPAN NG SANGGUNIANG PANLALAWIGAN</h3>
+                            <h5 class="text-dark">(Office of the Provincial Council)</h5>
+                        </div>
+                        <img width="11.5%" src="{{ asset('assets/tsp.png') }}" alt="" class="ms-auto">
+                    </div>
+                    <div class="text-center">
+                        <h4 class="fw-medium" style="letter-spacing : 1.8px;">
+                            SCHEDULE OF COMMITTEE MEETINGS
+                            <h4 class="fw-bold text-uppercase text-decoration-underline">
+                                {{ $schedules?->first()?->first()?->venue }}
+                            </h4>
+                        </h4>
+                    </div>
+
+
+                    @foreach ($schedules as $index => $grouppedSchedules)
+                        <div id="{{ $index }}" class="schedule-container">
+                            @foreach ($grouppedSchedules as $key => $schedule)
+                                @if (
+                                    $key === 0 ||
+                                        $schedule->date_and_time->format('Y-m-d') !== $grouppedSchedules[$key - 1]->date_and_time->format('Y-m-d'))
+                                    <h5 class="fw-medium text-center mt-5">
+                                <span class="text-uppercase">
+                                    @if ($schedule->date_and_time->hour === 0)
+                                        {{ $schedule->date_and_time->format('F d, Y') }}
+                                    @else
+                                        {{ $schedule->date_and_time->format('F d, Y @ h:i A') }}
+                                    @endif
+                                </span>
+                                        {{--                                        <p class="">{{ $schedule->description }}</p>--}}
+                                    </h5>
+                                    @php $countIndex = 1; @endphp
+                                @endif
+
+                                @if ($schedule->with_invited_guest == 1)
+                                    <h5 class="fw-medium text-uppercase text-center mt-3"
+                                        style="letter-spacing : 1.8px;">
+                                        COMMITTEE WITH INVITED GUESTS
+                                    </h5>
+                                    <div class="kanban-column w-100">
+                                        <ol class="kanban-cards" id="{{ $schedule->id }}">
+                                            @foreach ($schedule->committees as $committee)
+                                                <li class="kanban-card shadow-lg" data-id="{{ $committee->id }}">
+                                            <span class="text-white">
+                                                <span class="count-index">{{ $countIndex }}. </span>
+                                                {{ $committee->lead_committee_information->title }}
+                                                @if(!is_null($committee->expanded_committee_information))
+                                                    <br>
+                                                    <span class="letter-spacing-2" style="margin-left :120px;">
+                                                (<small>
+                                                        {{ Str::remove('COMMITTEE ON', Str::upper($committee?->expanded_committee_information?->title)) }}
+                                                            @if(!is_null($committee?->other_expanded_committee_information))
+                                                                & {{ Str::remove('Committee on', Str::upper($committee?->other_expanded_committee_information?->title)) }}
+                                                            @endif
+                                                </small>)
+                                            </span>
+                                                @endif
+                                            </span>
+                                                    @php $countIndex++; @endphp
+                                                </li>
+                                            @endforeach
+                                        </ol>
+                                    </div>
+                                @else
+                                    <h5 class="fw-medium text-uppercase text-center mt-3"
+                                        style="letter-spacing : 1.8px;">
+                                        COMMITTEE WITHOUT INVITED GUESTS
+                                    </h5>
+                                    <div class="kanban-column w-100">
+                                        <ol class="kanban-cards" id="{{ $schedule->id }}">
+                                            @foreach ($schedule->committees as $committee)
+                                                <li class="kanban-card shadow-lg" data-id="{{ $committee->id }}">
+                                            <span class="text-white">
+                                                <span class="count-index">{{ $countIndex }}. </span>
+                                                {{ $committee->lead_committee_information->title }}
+                                                @if(!is_null($committee->expanded_committee_information))
+                                                    <br>
+                                                    <span class="letter-spacing-2" style="margin-left :120px;">
+                                                (<small>
+                                                        {{ Str::remove('COMMITTEE ON', Str::upper($committee?->expanded_committee_information?->title)) }}
+                                                            @if(!is_null($committee?->other_expanded_committee_information))
+                                                                & {{ Str::remove('Committee on', Str::upper($committee?->other_expanded_committee_information?->title)) }}
+                                                            @endif
+                                                </small>)
+                                            </span>
+                                                @endif
+                                            </span>
+                                                    @php $countIndex++; @endphp
+                                                </li>
+                                            @endforeach
+                                        </ol>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @endforeach
+                    <div class="row">
+                        <div class="col-lg-4 offset-7">
+                            <h5 class="text-uppercase">
+                                prepared by:
+                            </h5>
+                        </div>
+
+                        <div class="col-lg-4 offset-8">
+                            <h5 class="text-uppercase" style="letter-spacing : 1.09px">
+                                {{ $settings->where('name', 'prepared_by')->first()->value }}
+                                <p class="text-start mx-5 fw-bold">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLSE II</p>
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-11 offset-1">
+                            <h5 class="text-uppercase">
+                                noted by:
+                            </h5>
+                        </div>
+
+                        <div class="col-lg-4 offset-2">
+                            <h5 class="text-uppercase" style="letter-spacing : 1.09px">
+                                {{ $settings->where('name', 'noted_by')->first()->value }}
+                                <p class="text-start mx-5 fw-bold">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLSO IV</p>
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @push('page-scripts')
+        
+    @endpush
+@endsection
